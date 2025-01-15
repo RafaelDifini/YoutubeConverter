@@ -14,6 +14,8 @@ ENV PATH="/venv/bin:$PATH"
 
 # Copiar os arquivos publicados para o container
 COPY YoutubeConverter/out . 
+# Copiar o arquivo de cookies para o container
+COPY cookies.txt /app/cookies.txt
 
 # Copiar o certificado para o container
 COPY YoutubeConverter/https-cert.pfx /https-cert.pfx
