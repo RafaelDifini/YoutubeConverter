@@ -2,9 +2,13 @@
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
 
-# Instalar dependências: ffmpeg, Python e criar ambiente virtual
-RUN apt-get update && apt-get install -y ffmpeg python3-pip python3-venv
-
+# Instalar dependências: ffmpeg, Python, Chromium e criar ambiente virtual
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    python3-pip \
+    python3-venv \
+    chromium \
+    chromium-driver
 # Criar e ativar o ambiente virtual para instalar yt-dlp
 RUN python3 -m venv /venv
 RUN /venv/bin/pip install yt-dlp
