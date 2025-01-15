@@ -25,7 +25,23 @@ public class YoutubeController : Controller
         string outputFileName = $"video_{timestamp}.mp4";
         string outputPath = Path.Combine(tempPath, outputFileName);
 
-        if (!Directory.Exists(tempPath))
+        if (Directory.Exists(tempPath))
+        {
+            try
+            {
+                string[] oldFiles = Directory.GetFiles(tempPath);
+                foreach (var file in oldFiles)
+                {
+                    System.IO.File.Delete(file);
+                    Console.WriteLine($"Arquivo antigo removido: {file}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erro ao limpar arquivos antigos na pasta temp: {ex.Message}");
+            }
+        }
+        else
         {
             Directory.CreateDirectory(tempPath);
         }
@@ -57,6 +73,7 @@ public class YoutubeController : Controller
             {
                 FileName = ytDlpPath,
                 Arguments = $"-f \"bestvideo+bestaudio\" --ffmpeg-location \"{ffmpegLocation}\"  --merge-output-format mp4  --cookies \"/app/cookies.txt\" --progress --print-json \"{video.VideoUrl}\" -o \"{outputPath}\"",
+                RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true
@@ -65,24 +82,42 @@ public class YoutubeController : Controller
             Console.WriteLine($"Comando yt-dlp: {processInfo.FileName} {processInfo.Arguments}");
 
             var process = new Process { StartInfo = processInfo };
-
             process.Start();
 
-            using (var reader = process.StandardError)
+            process.OutputDataReceived += (sender, args) =>
             {
-                string? line;
-                while ((line = await reader.ReadLineAsync()) != null)
+                if (args.Data != null)
                 {
-                    Console.WriteLine(line);
-                    if (line.Contains("[download]"))
+                    Console.WriteLine(args.Data);
+
+                    if (args.Data.Contains("[download]"))
                     {
-                        var match = Regex.Match(line, @"\d+\.\d+%");
+                        var match = Regex.Match(args.Data, @"\d+\.\d+%");
                         if (match.Success)
                         {
                             CurrentProgress = match.Value;
                         }
                     }
                 }
+            };
+
+            process.ErrorDataReceived += (sender, args) =>
+            {
+                if (args.Data != null)
+                {
+                    Console.WriteLine($"[ERROR] {args.Data}");
+                }
+            };
+
+
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+
+            await process.WaitForExitAsync();
+
+            if (process.ExitCode != 0)
+            {
+                throw new Exception($"Erro ao converter o vídeo. Código de saída: {process.ExitCode}");
             }
 
             CurrentProgress = "100%";
@@ -142,24 +177,16 @@ public class YoutubeController : Controller
 
         try
         {
-            var fileBytes = System.IO.File.ReadAllBytes(latestFile);
+            var fileStream = new FileStream(latestFile, FileMode.Open, FileAccess.Read, FileShare.None);
             var fileName = Path.GetFileName(latestFile);
 
-            try
+            Response.OnCompleted(() =>
             {
-                string[] allFiles = Directory.GetFiles(tempPath);
-                foreach (var file in allFiles)
-                {
-                    System.IO.File.Delete(file);
-                    Console.WriteLine($"Arquivo removido: {file}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Erro ao limpar a pasta temp: {ex.Message}");
-            }
+                LimparPastaTemp(tempPath);
+                return Task.CompletedTask;
+            });
 
-            return File(fileBytes, "application/octet-stream", fileName);
+            return File(fileStream, "application/octet-stream", fileName);
         }
         catch (Exception ex)
         {
@@ -168,9 +195,31 @@ public class YoutubeController : Controller
         }
     }
 
+    private void LimparPastaTemp(string tempPath)
+    {
+        try
+        {
+            string[] allFiles = Directory.GetFiles(tempPath);
+            foreach (var file in allFiles)
+            {
+                System.IO.File.Delete(file);
+                Console.WriteLine($"Arquivo removido: {file}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao limpar a pasta temp: {ex.Message}");
+        }
+    }
+
+
+
+
     [HttpGet]
     public IActionResult Progress()
     {
         return Json(new { progress = CurrentProgress });
     }
+
+
 }
