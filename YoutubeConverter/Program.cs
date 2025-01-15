@@ -4,6 +4,13 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
 
+var tempPath = builder.Configuration["TemporaryFilePath"];
+if (!Directory.Exists(tempPath))
+{
+    Directory.CreateDirectory(tempPath);
+}
+
+
 builder.WebHost.ConfigureKestrel(options =>
 {
     var port = Environment.GetEnvironmentVariable("PORT");
@@ -11,7 +18,7 @@ builder.WebHost.ConfigureKestrel(options =>
     if (!string.IsNullOrEmpty(port))
     {
         options.ListenAnyIP(int.Parse(port));
-        port = Environment.GetEnvironmentVariable("PORT") ?? "5173";
+        //port = Environment.GetEnvironmentVariable("PORT") ?? "5173";
     }
     else
     {

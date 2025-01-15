@@ -20,7 +20,7 @@ public class YoutubeController : Controller
             return View("Index");
         }
 
-        string tempPath = Path.GetTempPath();
+        string tempPath = Path.Combine(Directory.GetCurrentDirectory(), "temp");
         string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
         string outputFileName = $"video_{timestamp}.mp4";
         string outputPath = Path.Combine(tempPath, outputFileName);
@@ -97,13 +97,20 @@ public class YoutubeController : Controller
     [HttpGet]
     public IActionResult Download()
     {
-        string tempPath = Path.GetTempPath();
+        string tempPath = Path.Combine(Directory.GetCurrentDirectory(), "temp");
+
+        if (!Directory.Exists(tempPath))
+        {
+            return NotFound("Diretório de arquivos temporários não encontrado.");
+        }
+
         string[] files = Directory.GetFiles(tempPath, "video_*.mp4");
+
         string latestFile = files.OrderByDescending(f => new FileInfo(f).CreationTime).FirstOrDefault();
 
-        if (latestFile == null)
+        if (string.IsNullOrEmpty(latestFile))
         {
-            return NotFound("Arquivo não encontrado.");
+            return NotFound("Nenhum arquivo de vídeo encontrado.");
         }
 
         var fileBytes = System.IO.File.ReadAllBytes(latestFile);
@@ -111,4 +118,5 @@ public class YoutubeController : Controller
 
         return File(fileBytes, "application/octet-stream", fileName);
     }
+
 }
