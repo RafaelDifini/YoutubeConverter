@@ -25,6 +25,10 @@ public class YoutubeController : Controller
         string outputFileName = $"video_{timestamp}.mp4";
         string outputPath = Path.Combine(tempPath, outputFileName);
 
+        if (!Directory.Exists(tempPath))
+        {
+            Directory.CreateDirectory(tempPath);
+        }
         try
         {
             var ytDlpPath = "/venv/bin/yt-dlp";

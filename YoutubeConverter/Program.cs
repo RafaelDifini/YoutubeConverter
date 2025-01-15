@@ -1,18 +1,26 @@
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Hosting;
+using System.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure o Kestrel para usar a porta definida pela variável de ambiente
+builder.Services.AddControllersWithViews();
+
 builder.WebHost.ConfigureKestrel(options =>
 {
-    var port = Environment.GetEnvironmentVariable("PORT") ?? "5173";
-    options.ListenAnyIP(int.Parse(port)); // HTTP
+    if (builder.Environment.IsDevelopment())
+    {
+        options.ListenLocalhost(5173); // HTTP
+        options.ListenLocalhost(7259, listenOptions =>
+        {
+            listenOptions.UseHttps(); // HTTPS
+        });
+    }
+    else
+    {
+        var port = Environment.GetEnvironmentVariable("PORT") ?? "5173";
+        options.ListenAnyIP(int.Parse(port)); // HTTP
+    }
 });
 
-// Configurações padrão do ASP.NET
-builder.Services.AddControllersWithViews();
-builder.Services.AddRazorPages();
 
 var app = builder.Build();
 
@@ -31,6 +39,13 @@ app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    pattern: "{controller=Youtube}/{action=Index}/{id?}");
+
+app.Lifetime.ApplicationStarted.Register(() =>
+{
+    var urls = string.Join(", ", app.Urls);
+    Console.WriteLine($"Servidor iniciado. Acesse: {urls}");
+});
+
 
 app.Run();
