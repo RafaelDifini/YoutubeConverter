@@ -71,8 +71,9 @@ public class YoutubeController : Controller
 
             var processInfo = new ProcessStartInfo
             {
+                //--cookies \"/app/cookies.txt\"
                 FileName = ytDlpPath,
-                Arguments = $"-f \"bestvideo+bestaudio\" --ffmpeg-location \"{ffmpegLocation}\"  --merge-output-format mp4  --cookies \"/app/cookies.txt\" --progress --print-json \"{video.VideoUrl}\" -o \"{outputPath}\"",
+                Arguments = $"-f \"bestvideo+bestaudio\" --ffmpeg-location \"{ffmpegLocation}\"  --merge-output-format mp4  --progress --print-json \"{video.VideoUrl}\" -o \"{outputPath}\"",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
