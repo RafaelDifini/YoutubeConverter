@@ -9,7 +9,6 @@
     $('#progress-text').text('0%');
     $('#progress-container').css('display', 'none'); 
 
-    // Inicia a conversão
     $.post('/Youtube/Convert', { VideoUrl: videoUrl }, function (response) {
         window.location.href = '/Youtube/Download';
     });
