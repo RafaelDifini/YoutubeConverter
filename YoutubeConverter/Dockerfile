@@ -22,9 +22,8 @@ COPY YoutubeConverter/https-cert.pfx /https-cert.pfx
 ENV ASPNETCORE_Kestrel__Certificates__Default__Path=/https-cert.pfx
 ENV ASPNETCORE_Kestrel__Certificates__Default__Password=senha
 
-# Expor as portas HTTP e HTTPS especificadas no launchSettings.json
-EXPOSE 5173
-EXPOSE 7259
+# Expor apenas a porta HTTP
+EXPOSE 80
 
 # Executar a aplicação
 ENTRYPOINT ["dotnet", "YoutubeConverter.dll"]

@@ -1,27 +1,24 @@
-using System.Diagnostics;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddControllersWithViews();
-
+// Configure o Kestrel para usar a porta definida pela variável de ambiente
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.ListenAnyIP(5173); // HTTP
-    options.ListenAnyIP(7259, listenOptions =>
-    {
-        listenOptions.UseHttps(); // HTTPS
-    });
+    var port = Environment.GetEnvironmentVariable("PORT") ?? "5173";
+    options.ListenAnyIP(int.Parse(port)); // HTTP
 });
 
+// Configurações padrão do ASP.NET
+builder.Services.AddControllersWithViews();
+builder.Services.AddRazorPages();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
@@ -34,13 +31,6 @@ app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Youtube}/{action=Index}/{id?}");
-
-app.Lifetime.ApplicationStarted.Register(() =>
-{
-    var urls = string.Join(", ", app.Urls);
-    Console.WriteLine($"Servidor iniciado. Acesse: {urls}");
-});
-
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
