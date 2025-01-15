@@ -182,7 +182,7 @@ public class YoutubeController : Controller
 
             Response.OnCompleted(() =>
             {
-                Task.Delay(10000);
+                Task.Delay(2000);
                 LimparPastaTemp(tempPath);
                 return Task.CompletedTask;
             });
