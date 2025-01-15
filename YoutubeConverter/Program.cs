@@ -8,16 +8,17 @@ builder.WebHost.ConfigureKestrel(options =>
 {
     var port = Environment.GetEnvironmentVariable("PORT");
 
-    if (port != null)
+    if (!string.IsNullOrEmpty(port))
     {
-        options.ListenAnyIP(int.Parse(port)); // Porta configurada pelo Render
+        options.ListenAnyIP(int.Parse(port));
+        port = Environment.GetEnvironmentVariable("PORT") ?? "5173";
     }
     else
     {
-        options.ListenLocalhost(5173); // HTTP
+        options.ListenLocalhost(5173);
         options.ListenLocalhost(7259, listenOptions =>
         {
-            listenOptions.UseHttps(); // HTTPS
+            listenOptions.UseHttps();
         });
     }
 });
