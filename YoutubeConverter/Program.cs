@@ -6,7 +6,13 @@ builder.Services.AddControllersWithViews();
 
 builder.WebHost.ConfigureKestrel(options =>
 {
-    if (builder.Environment.IsDevelopment())
+    var port = Environment.GetEnvironmentVariable("PORT");
+
+    if (port != null)
+    {
+        options.ListenAnyIP(int.Parse(port)); // Porta configurada pelo Render
+    }
+    else
     {
         options.ListenLocalhost(5173); // HTTP
         options.ListenLocalhost(7259, listenOptions =>
@@ -14,13 +20,7 @@ builder.WebHost.ConfigureKestrel(options =>
             listenOptions.UseHttps(); // HTTPS
         });
     }
-    else
-    {
-        var port = Environment.GetEnvironmentVariable("PORT") ?? "5173";
-        options.ListenAnyIP(int.Parse(port)); // HTTP
-    }
 });
-
 
 var app = builder.Build();
 
@@ -46,6 +46,5 @@ app.Lifetime.ApplicationStarted.Register(() =>
     var urls = string.Join(", ", app.Urls);
     Console.WriteLine($"Servidor iniciado. Acesse: {urls}");
 });
-
 
 app.Run();
