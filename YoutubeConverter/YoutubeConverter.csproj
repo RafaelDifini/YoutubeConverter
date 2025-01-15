@@ -19,9 +19,21 @@
     <RuntimeIdentifier Include="linux-x64" />
     <RuntimeIdentifier Include="win-x64" />
   </ItemGroup>
+  <ItemGroup>
+    <None Update="Resources\yt-dlp.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 
   <ItemGroup>
-    <PackageReference Include="Soenneker.Libraries.ytdlp" Version="3.0.392" />
+    <PackageReference Include="Soenneker.Libraries.ytdlp" Version="3.0.410" />
   </ItemGroup>
+
+
+  <ItemGroup>
+    <Folder Include="temp\" />
+  </ItemGroup>
+
 
 </Project>

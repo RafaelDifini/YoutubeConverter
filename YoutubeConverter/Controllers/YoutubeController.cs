@@ -29,23 +29,40 @@ public class YoutubeController : Controller
         {
             Directory.CreateDirectory(tempPath);
         }
+
         try
         {
-            var ytDlpPath = "/venv/bin/yt-dlp";
+            string ytDlpPath;
+            string ffmpegLocation;
 
-            if (!System.IO.File.Exists(ytDlpPath))
+            if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
             {
-                throw new FileNotFoundException($"O executável yt-dlp não foi encontrado em: {ytDlpPath}");
+                ytDlpPath = Path.Combine(AppContext.BaseDirectory, "Resources", "yt-dlp.exe");
+                ffmpegLocation = @"C:\Users\Rafae\Downloads\ffmpeg-master-latest-win64-gpl\bin";
+                if (!System.IO.File.Exists(ytDlpPath))
+                {
+                    throw new FileNotFoundException($"O executável yt-dlp não foi encontrado no caminho: {ytDlpPath}");
+                }
+
             }
+            else
+            {
+                ytDlpPath = "/venv/bin/yt-dlp";
+                ffmpegLocation = "/usr/bin";
+            }
+
+            Console.WriteLine($"Executável yt-dlp: {ytDlpPath}");
 
             var processInfo = new ProcessStartInfo
             {
                 FileName = ytDlpPath,
-                Arguments = $"-f bestvideo+bestaudio --merge-output-format mp4 --progress \"{video.VideoUrl}\" -o \"{outputPath}\"",
+                Arguments = $"-f \"bestvideo+bestaudio\" --ffmpeg-location \"{ffmpegLocation}\"  --merge-output-format mp4  --progress --print-json \"{video.VideoUrl}\" -o \"{outputPath}\"",
                 RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
+
+            Console.WriteLine($"Comando yt-dlp: {processInfo.FileName} {processInfo.Arguments}");
 
             var process = new Process { StartInfo = processInfo };
 
@@ -56,6 +73,7 @@ public class YoutubeController : Controller
                 string? line;
                 while ((line = await reader.ReadLineAsync()) != null)
                 {
+                    Console.WriteLine(line);
                     if (line.Contains("[download]"))
                     {
                         var match = Regex.Match(line, @"\d+\.\d+%");
@@ -73,25 +91,30 @@ public class YoutubeController : Controller
 
             if (process.ExitCode != 0)
             {
-                throw new Exception("Erro ao converter o vídeo.");
+                throw new Exception($"Erro ao converter o vídeo. Código de saída: {process.ExitCode}");
             }
         }
         catch (Exception ex)
         {
+            Console.WriteLine($"Erro na conversão: {ex.Message}");
             ViewBag.Error = $"Erro: {ex.Message}";
             return View("Index");
         }
 
-        var fileBytes = await System.IO.File.ReadAllBytesAsync(outputPath);
-        var fileName = Path.GetFileName(outputPath);
+        Console.WriteLine($"Arquivo convertido: {outputPath}");
 
-        return File(fileBytes, "application/octet-stream", fileName);
-    }
+        try
+        {
+            var fileBytes = await System.IO.File.ReadAllBytesAsync(outputPath);
+            var fileName = Path.GetFileName(outputPath);
 
-    [HttpGet]
-    public IActionResult Progress()
-    {
-        return Json(new { progress = CurrentProgress });
+            return File(fileBytes, "application/octet-stream", fileName);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao ler o arquivo convertido: {ex.Message}");
+            return View("Index", $"Erro ao acessar o arquivo convertido: {ex.Message}");
+        }
     }
 
     [HttpGet]
@@ -101,22 +124,53 @@ public class YoutubeController : Controller
 
         if (!Directory.Exists(tempPath))
         {
+            Console.WriteLine("Diretório temporário não encontrado.");
             return NotFound("Diretório de arquivos temporários não encontrado.");
         }
 
         string[] files = Directory.GetFiles(tempPath, "video_*.mp4");
 
-        string latestFile = files.OrderByDescending(f => new FileInfo(f).CreationTime).FirstOrDefault();
-
-        if (string.IsNullOrEmpty(latestFile))
+        if (files.Length == 0)
         {
+            Console.WriteLine("Nenhum arquivo encontrado no diretório temporário.");
             return NotFound("Nenhum arquivo de vídeo encontrado.");
         }
 
-        var fileBytes = System.IO.File.ReadAllBytes(latestFile);
-        var fileName = Path.GetFileName(latestFile);
+        string latestFile = files.OrderByDescending(f => new FileInfo(f).CreationTime).First();
 
-        return File(fileBytes, "application/octet-stream", fileName);
+        Console.WriteLine($"Arquivo mais recente encontrado: {latestFile}");
+
+        try
+        {
+            var fileBytes = System.IO.File.ReadAllBytes(latestFile);
+            var fileName = Path.GetFileName(latestFile);
+
+            try
+            {
+                string[] allFiles = Directory.GetFiles(tempPath);
+                foreach (var file in allFiles)
+                {
+                    System.IO.File.Delete(file);
+                    Console.WriteLine($"Arquivo removido: {file}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erro ao limpar a pasta temp: {ex.Message}");
+            }
+
+            return File(fileBytes, "application/octet-stream", fileName);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao ler o arquivo para download: {ex.Message}");
+            return NotFound($"Erro ao acessar o arquivo para download: {ex.Message}");
+        }
     }
 
+    [HttpGet]
+    public IActionResult Progress()
+    {
+        return Json(new { progress = CurrentProgress });
+    }
 }

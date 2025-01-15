@@ -22,7 +22,7 @@ COPY YoutubeConverter/https-cert.pfx /https-cert.pfx
 ENV ASPNETCORE_Kestrel__Certificates__Default__Path=/https-cert.pfx
 ENV ASPNETCORE_Kestrel__Certificates__Default__Password=senha
 
-# Expor apenas a porta HTTP
+# Expor as portas necessárias
 EXPOSE 80
 
 # Executar a aplicação
