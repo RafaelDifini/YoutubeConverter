@@ -13,10 +13,10 @@ RUN /venv/bin/pip install yt-dlp
 ENV PATH="/venv/bin:$PATH"
 
 # Copiar os arquivos publicados para o container
-COPY out . 
+COPY YoutubeConverter/out . 
 
 # Copiar o certificado para o container
-COPY https-cert.pfx /https-cert.pfx
+COPY YoutubeConverter/https-cert.pfx /https-cert.pfx
 
 # Configurar a variável de ambiente para o certificado
 ENV ASPNETCORE_Kestrel__Certificates__Default__Path=/https-cert.pfx
